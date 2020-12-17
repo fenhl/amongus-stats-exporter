@@ -17,13 +17,12 @@ use {
 
 #[derive(Debug, From)]
 enum Error {
-    Clipboard(SystemError),
     HomeNotFound,
     Io(io::Error),
     Version,
 }
 
-fn main() -> Result<(), Error> {
+fn main_inner() -> Result<String, Error> {
     let mut stats_file = File::open(
         directories::UserDirs::new()
             .ok_or(Error::HomeNotFound)?
@@ -45,6 +44,12 @@ fn main() -> Result<(), Error> {
         };
         buf += &format!("{}\n", stat);
     }
-    set_clipboard(Unicode, buf)?;
-    Ok(())
+    Ok(buf)
+}
+
+fn main() -> Result<(), SystemError> {
+    match main_inner() {
+        Ok(buf) => set_clipboard(Unicode, buf),
+        Err(e) => set_clipboard(Unicode, format!("error: {:?}", e)),
+    }
 }
